@@ -11,8 +11,10 @@ const sections = [
   { id: "reports", label: "Reports" },
   { id: "settings", label: "Settings" },
 ] as const;
+const initialSections = sections.slice(0, 2);
 
-export default function SectionNav() {
+export default function SectionNav({ analysisAvailable = true }: { analysisAvailable?: boolean }) {
+  const visibleSections = analysisAvailable ? sections : initialSections;
   const [activeSection, setActiveSection] = useState<string>(sections[0].id);
   const [isScrolled, setIsScrolled] = useState(false);
   const [cursorReady, setCursorReady] = useState(false);
@@ -32,7 +34,7 @@ export default function SectionNav() {
     setIsScrolled(window.scrollY > 20);
     if (isClickScrollingRef.current) return;
 
-    const lastSection = sections.at(-1);
+    const lastSection = visibleSections.at(-1);
     if (lastSection && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 3) {
       setActiveSection(lastSection.id);
       return;
@@ -40,12 +42,12 @@ export default function SectionNav() {
 
     const line = window.scrollY + (navRef.current?.getBoundingClientRect().height ?? 62) + 28;
     let current: string = sections[0].id;
-    for (const { id } of sections) {
+    for (const { id } of visibleSections) {
       const element = document.getElementById(id);
       if (element && element.getBoundingClientRect().top + window.scrollY <= line) current = id;
     }
     setActiveSection(current);
-  }, []);
+  }, [visibleSections]);
 
   const unlockClickScroll = useCallback(() => {
     if (!isClickScrollingRef.current) return;
@@ -134,7 +136,7 @@ export default function SectionNav() {
     <div className="section-nav-clip">
       <nav ref={navRef} className="section-nav" aria-label="Page sections">
         {cursorReady && <motion.span aria-hidden="true" className="section-nav-cursor" style={{ x: springX, width: springWidth }} />}
-        {sections.map(({ id, label }) => <a
+        {visibleSections.map(({ id, label }) => <a
           key={id}
           ref={(element) => { if (element) tabRefs.current.set(id, element); else tabRefs.current.delete(id); }}
           href={`#${id}`}

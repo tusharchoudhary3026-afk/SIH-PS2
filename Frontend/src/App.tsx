@@ -10,6 +10,8 @@ import ReportsPage from "./pages/reports-page";
 import SettingsPage from "./pages/settings-page";
 import type { AnalysisPreferences } from "./state/app-types";
 import { demoDetections } from "./state/demo-data";
+import { mapAnalysisDetections } from "./services/map-analysis-result";
+import type { AnalysisResult } from "./services/engine8-api";
 
 const defaultPreferences: AnalysisPreferences = { showDetections: true, showAcousticShadows: true, confidenceThreshold: 50 };
 const storageKey = "marine-debris-intelligence.preferences.v1";
@@ -30,12 +32,18 @@ function loadPreferences(): { value: AnalysisPreferences; message: string } {
 
 export default function App() {
   const [selectedDetectionId, setSelectedDetectionId] = useState<number | null>(17);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [loadedPreferences] = useState(loadPreferences);
   const [preferences, setPreferences] = useState<AnalysisPreferences>(loadedPreferences.value);
   const [storageMessage, setStorageMessage] = useState(loadedPreferences.message);
 
+  const detections = analysisResult ? mapAnalysisDetections(analysisResult.detections) : demoDetections;
   const selectDetection = (id: number) => {
-    if (demoDetections.some((detection) => detection.id === id)) setSelectedDetectionId(id);
+    if (detections.some((detection) => detection.id === id)) setSelectedDetectionId(id);
+  };
+  const receiveAnalysis = (result: AnalysisResult | null) => {
+    setAnalysisResult(result);
+    setSelectedDetectionId(result?.detections.length ? 1 : null);
   };
   const viewSonar = () => document.getElementById("sonar-analysis")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const changePreferences = (next: AnalysisPreferences) => {
@@ -49,15 +57,16 @@ export default function App() {
   };
 
   return <main className="page-content scroll-page">
-    <div className="mock-mode-banner" role="status">DEMO DATA — Existing dashboard detections and coordinates are illustrative only; they are not detector output or real locations. Engine 4 integration is pending.</div>
-    <SectionNav />
-    <section id="dashboard" className="scroll-section scroll-section-hero"><DashboardPage onViewSonar={viewSonar} onSelectDetection={selectDetection} /></section>
-    <section id="sonar-analysis" className="scroll-section"><SonarAnalysisPage detections={demoDetections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} preferences={preferences} onPreferencesChange={changePreferences} /></section>
-    <section id="detections" className="scroll-section"><DetectionsPage selectedDetectionId={selectedDetectionId} onSelectDetection={(id) => { selectDetection(id); viewSonar(); }} /></section>
-    <section id="detection-map" className="scroll-section"><DetectionMapPage selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
-    <section id="survey-comparison" className="scroll-section"><SurveyComparisonPage onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
-    <section id="analytics" className="scroll-section"><AnalyticsPage /></section>
-    <section id="reports" className="scroll-section"><ReportsPage /></section>
-    <section id="settings" className="scroll-section"><SettingsPage preferences={preferences} onChange={changePreferences} storageMessage={storageMessage} /></section>
+    <SectionNav analysisAvailable={analysisResult !== null} />
+    <section id="dashboard" className="scroll-section scroll-section-hero"><DashboardPage detections={detections} analysisResult={analysisResult} onViewSonar={viewSonar} onSelectDetection={selectDetection} /></section>
+    <section id="sonar-analysis" className="scroll-section"><SonarAnalysisPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} preferences={preferences} onPreferencesChange={changePreferences} analysisResult={analysisResult} onAnalysisResult={receiveAnalysis} /></section>
+    {analysisResult && <>
+      <section id="detections" className="scroll-section"><DetectionsPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={(id) => { selectDetection(id); viewSonar(); }} /></section>
+      <section id="detection-map" className="scroll-section"><DetectionMapPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
+      <section id="survey-comparison" className="scroll-section"><SurveyComparisonPage detections={detections} analysisResult={analysisResult} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
+      <section id="analytics" className="scroll-section"><AnalyticsPage detections={detections} analysisResult={analysisResult} /></section>
+      <section id="reports" className="scroll-section"><ReportsPage detections={detections} analysisResult={analysisResult} /></section>
+      <section id="settings" className="scroll-section"><SettingsPage preferences={preferences} onChange={changePreferences} storageMessage={storageMessage} /></section>
+    </>}
   </main>;
 }

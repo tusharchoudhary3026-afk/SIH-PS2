@@ -190,8 +190,11 @@ class Engine8Tests(unittest.TestCase):
 
     def test_health_and_upload_mock_end_to_end(self):
         status,body,_=self.request("/api/health"); self.assertEqual(status,200); self.assertEqual(json.loads(body)["mode"],"MOCK")
-        status,body,_=self.request("/api/analyze","POST",png_bytes(),{"Content-Type":"image/png","X-Filename":"fixture.png","X-Source-Dataset":"AI4Shipwrecks"})
-        result=json.loads(body); self.assertEqual(status,200); self.assertIn("MOCK",result["message"]); self.assertEqual(result["detections"],[])
+        status,body,_=self.request("/api/analyze","POST",png_bytes(),{"Content-Type":"image/png","X-Filename":"fixture.png","X-Source-Dataset":"ALL"})
+        result=json.loads(body); self.assertEqual(status,200); self.assertIn("MOCK",result["message"])
+        self.assertEqual(result["datasets"],["AI4Shipwrecks","MILCO/NOMBO","SubPipe"])
+        self.assertEqual({item["source_dataset"] for item in result["detections"]},set(result["datasets"]))
+        self.assertEqual(len(result["detections"]),3)
 
     def test_injected_test_detector_flows_through_engines_5_and_6(self):
         # This detector and its prediction exist only as a synthetic test fixture.
@@ -201,8 +204,8 @@ class Engine8Tests(unittest.TestCase):
                 from engine5_confidence.schemas import BBox
                 return [Detection("test-only",image_id,0,"test_class",BBox(5,5,24,28),.6,image.shape[1],image.shape[0],source_dataset,{"test_fixture":True})]
         service=AnalysisService(detector=TestDetector(),review_store=self.store)
-        # Request is served by the empty MockDetector; direct injected test service
-        # verifies the adapter boundary and complete scoring/geolocation chain.
+        # Direct injected test service verifies the adapter boundary and
+        # complete scoring/geolocation chain for a single selected dataset.
         result=service.analyze_bytes(png_bytes(),source_dataset="MILCO/NOMBO")
         detection_result=result["detections"][0]
         self.assertEqual(result["mode"],"MOCK")

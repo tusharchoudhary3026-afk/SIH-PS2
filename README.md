@@ -4,7 +4,7 @@
 
 Engine 5 (confidence/evidence infrastructure), Engine 6 (metadata-grounded geolocation), Engine 7 (evaluation infrastructure), and Engine 8 (local API and dashboard integration) are implemented as modular infrastructure. **Engine 4 and SubPipe integration are pending.** No trained detector is bundled and no project performance metrics are available.
 
-The Engine 8 development `MockDetector` intentionally returns an empty detection list. Upload analysis therefore exercises the image/API pipeline without fabricating detections. Existing overview pages still contain the original illustrative demo records and label them as demo data. Uploaded-image results are separate and must not be interpreted as detector predictions.
+The Engine 8 development `MockDetector` returns one synthetic, clearly labeled sample for each configured source dataset. These are pipeline/UI fixtures, not detector predictions. No trained detector is bundled and no project performance metrics are available.
 
 ## Start the backend
 
@@ -26,7 +26,7 @@ npm ci
 npm run dev
 ```
 
-Set `VITE_API_BASE_URL` at frontend build/dev time to use a different local API origin. The browser sends an uploaded image only after **Run Analysis** is selected.
+Set `VITE_API_BASE_URL` at frontend build/dev time to use a different local API origin. The browser sends one uploaded image to all configured datasets when **Start scanning** is selected.
 
 ## Engine 4 detector contract
 
@@ -55,7 +55,7 @@ The optional `--assign-splits` flag creates deterministic splits from metadata a
 
 ## Engine 8: API and dashboard
 
-The standard-library local API exposes `GET /api/health`, `POST /api/analyze` (raw image request body; filename and dataset in headers), `POST /api/review` (JSON), `GET /api/reviews`, and `GET /api/export?format=json|csv`. Human decisions persist to `data/engine8/reviews.json` or the path in `SIH_REVIEW_STORE`. The API listens on localhost by default; it has no authentication and is for local development only. The existing React frontend uploads to this API, labels `MOCK`/`REAL`/`UNAVAILABLE` status, shows evidence/location fields when a detector supplies detections, and exports the current analysis as JSON/CSV. Its old sample dashboard data remain visibly illustrative.
+The standard-library local API exposes `GET /api/health`, `POST /api/analyze` (raw image request body; filename and optional dataset in headers), `POST /api/review` (JSON), `GET /api/reviews`, and `GET /api/export?format=json|csv`. Omitting `X-Source-Dataset` or sending `ALL` analyzes against every dataset listed in `src/engine8_api/config.json`; each result includes its `source_dataset`. Human decisions persist to `data/engine8/reviews.json` or the path in `SIH_REVIEW_STORE`. The API listens on localhost by default; it has no authentication and is for local development only. The existing React frontend uploads once to this API, labels `MOCK`/`REAL`/`UNAVAILABLE` status, groups results by source dataset, shows evidence/location fields when a detector supplies detections, and exports the current analysis as JSON/CSV. Its old sample dashboard data remain visibly illustrative.
 
 Inspection Priority is a configurable weighted score over available normalized evidence in `src/engine8_api/config.json`; it is not a cleanup priority and does not use proximity or sensitive-zone GIS data.
 

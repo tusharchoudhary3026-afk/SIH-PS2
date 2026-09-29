@@ -471,9 +471,47 @@ button, a { font: inherit; }
 .analysis-status.complete { color: var(--verified); border-color: rgba(105,217,156,.25); }
 .analysis-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(280px, .8fr); align-items: start; gap: 15px; }
 .analysis-main, .analysis-aside { min-width: 0; }
+.scan-upload-state { display: grid; grid-template-columns: minmax(0, .9fr) minmax(320px, 1.1fr); gap: clamp(24px, 6vw, 90px); align-items: center; min-height: 390px; padding: clamp(24px, 5vw, 58px); }
+.upload-copy h2 { margin: 12px 0; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.05em; }
+.upload-copy p { max-width: 490px; color: #99adb6; font-size: 15px; line-height: 1.75; }
+.scan-upload-controls { display: grid; gap: 16px; }
+.scan-upload-drop { position: relative; display: flex; min-height: 200px; flex-direction: column; align-items: center; justify-content: center; gap: 11px; overflow: hidden; border: 1px dashed rgba(67,224,208,.42); border-radius: 8px; background: radial-gradient(ellipse at 50% 0%,rgba(67,224,208,.09),transparent 70%),rgba(3,14,21,.48); color: #e5f2f3; text-align: center; cursor: pointer; transition: border-color .2s ease,background .2s ease; }
+.scan-upload-drop:hover { border-color: rgba(67,224,208,.8); background-color: rgba(67,224,208,.06); }
+.scan-upload-drop.has-file { border-style: solid; border-color: rgba(67,224,208,.68); background: rgba(67,224,208,.045); }
+.scan-upload-drop input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.scan-upload-drop strong { font-size: 17px; }
+.scan-upload-drop small { color: #8ca2ad; font-size: 12px; }
+.upload-icon { display: grid; width: 45px; height: 45px; place-items: center; border: 1px solid rgba(67,224,208,.35); border-radius: 50%; color: var(--cyan); font-size: 23px; }
+.dataset-select { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #a8bac2; font-size: 13px; }
+.dataset-select > span { display: flex; align-items: center; gap: 8px; }
+.dataset-select b { color: #ffbd78; font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
+.dataset-select select { min-width: 170px; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: #0a1c26; color: #e0eaed; }
+.dataset-select select[aria-invalid="true"] { border-color: rgba(255,128,107,.8); }
+.start-scan-button { justify-content: center; width: 100%; min-height: 46px; }
+.scan-progress { display: flex; align-items: center; gap: 10px; margin: 0; color: #ffd28b; font-size: 13px; }
+.scan-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,210,139,.24); border-top-color: #ffd28b; border-radius: 50%; animation: scan-spin .8s linear infinite; }
+@keyframes scan-spin { to { transform: rotate(360deg); } }
+.api-connection { margin: 0; color: #8299a3; font-size: 11px; }
+.api-connection strong { color: #b8c8ce; font-weight: 550; }
+.api-connection code { color: var(--cyan); }
+.empty-analysis { padding: 17px; border: 1px solid rgba(143,174,188,.14); border-radius: 5px; color: #bdcbd0; }
+.empty-analysis p { margin: 7px 0 0; color: #8ca0aa; font-size: 12px; line-height: 1.6; }
+.comparison-empty-state { margin-bottom: 25px; padding: 26px; }
+.comparison-empty-state h3 { margin: 10px 0 8px; font-size: 20px; }
+.comparison-empty-state p { max-width: 850px; color: #9aadb6; font-size: 13px; line-height: 1.7; }
+.comparison-next-step { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 10px 16px; margin-top: 21px; padding-top: 16px; border-top: 1px solid var(--line); color: #899da7; font-family: var(--mono); font-size: 10px; }
+.comparison-next-step strong { color: #d5e2e5; font-weight: 500; }
+.map-empty-state { position: absolute; z-index: 2; top: 50%; left: 50%; display: grid; gap: 8px; width: min(340px, 82%); padding: 18px; transform: translate(-50%,-50%); border: 1px solid rgba(171,204,220,.16); border-radius: 6px; background: rgba(5,18,26,.88); text-align: center; }
+.map-empty-state strong { color: #e0eaed; font-size: 14px; }
+.map-empty-state span { color: #93a7b0; font-size: 11px; line-height: 1.55; }
 .sonar-viewer { overflow: hidden; border: 1px solid rgba(80,189,191,.2); border-radius: 7px; background: #07131b; box-shadow: 0 16px 45px rgba(0,0,0,.16); }
 .api-detection-box { position: absolute; z-index: 4; border: 2px solid #ff806b; background: rgba(255,128,107,.08); color: white; cursor: pointer; }
 .api-detection-box span { position: absolute; top: -25px; left: -2px; padding: 3px 6px; background: #692d2b; color: white; font-size: 11px; white-space: nowrap; }
+.dataset-result-group { margin-top: 16px; padding: 12px 16px; border: 1px solid rgba(67,224,208,.15); border-radius: 6px; background: rgba(7,25,34,.42); }
+.dataset-result-heading { display: flex; align-items: center; gap: 12px; padding-bottom: 9px; color: #8da4ad; }
+.dataset-result-heading strong { color: var(--cyan); font-size: 13px; }
+.dataset-result-heading > span:last-child { margin-left: auto; font-family: var(--mono); font-size: 10px; }
+.dataset-badge { display: inline-flex; margin-left: 9px; padding: 3px 7px; border: 1px solid rgba(67,224,208,.25); border-radius: 999px; color: var(--cyan); font-family: var(--mono); font-size: 9px; vertical-align: middle; }
 .mock-mode-banner { margin: 12px 0; padding: 12px 16px; border: 1px solid rgba(255,190,90,.48); border-radius: 8px; background: rgba(120,75,15,.2); color: #ffe0a5; font-size: 13px; }
 .api-result { margin-top: 20px; padding: 20px; }
 .api-detection-detail { padding: 16px 0; border-top: 1px solid rgba(171,204,220,.16); }
@@ -485,6 +523,7 @@ button, a { font: inherit; }
 .viewer-canvas { position: relative; min-height: 380px; overflow: hidden; background: #0b202a; }
 .sonar-canvas { position: relative; aspect-ratio: 1.72 / 1; min-height: 320px; overflow: hidden; background: #081720; }
 .sonar-art, .uploaded-sonar { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(var(--sonar-zoom, 1)); transition: transform .2s ease; }
+.uploaded-sonar { object-fit: fill; }
 .scan-grid { position: absolute; inset: 0; pointer-events: none; opacity: .28; background: linear-gradient(rgba(139,224,221,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(139,224,221,.07) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(90deg, #000, transparent 82%); }
 .shadow-highlight { position: absolute; left: 26%; top: 49%; width: 31%; height: 14%; transform: rotate(12deg); background: linear-gradient(90deg, transparent, rgba(0,7,11,.8), transparent); filter: blur(4px); pointer-events: none; }
 .sonar-marker, .map-marker { position: absolute; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 1px solid currentColor; border-radius: 50%; background: rgba(5,17,23,.78); color: #ff806b; cursor: pointer; transform: translate(-50%,-50%); box-shadow: 0 0 0 5px rgba(255,128,107,.1), 0 0 15px rgba(255,128,107,.25); }
@@ -609,6 +648,7 @@ button, a { font: inherit; }
 .priority-stat > strong { color: #e5eff1; font-family: var(--mono); font-size: 14px; }.priority-stat > small { color: #8097a1; font-family: var(--mono); font-size: 9px; text-align: right; }
 .quality-panel { margin-top: 14px; }
 .quality-ring { display: grid; place-items: center; width: 54px; height: 54px; border: 3px solid rgba(105,217,156,.65); border-radius: 50%; color: var(--verified); font-family: var(--mono); font-size: 11px; }
+.quality-ring-unavailable { border-color: rgba(143,174,188,.28); color: #95a8b1; }
 .quality-table { margin-top: 18px; }
 .quality-table > div { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 11px 8px; border-bottom: 1px solid rgba(171,204,220,.08); color: #bac8cd; font-size: 11px; }
 .quality-table > div:first-child { color: #7f96a2; font-family: var(--mono); font-size: 9px; text-transform: uppercase; }
@@ -646,6 +686,7 @@ button, a { font: inherit; }
   .page-section { padding-top: 27px; }
   .page-dashboard { padding: 0; }
   .analysis-layout, .map-layout { grid-template-columns: minmax(0,1fr); }
+  .scan-upload-state { grid-template-columns: minmax(0,1fr); min-height: 0; gap: 22px; padding: 23px; }
   .analysis-aside { grid-template-columns: minmax(0,1fr) minmax(0,.8fr); }
   .marine-map { min-height: min(62vh,520px); }
 }

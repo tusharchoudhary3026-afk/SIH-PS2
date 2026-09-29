@@ -1,6 +1,7 @@
 {
   "max_upload_bytes": 25000000,
   "allowed_image_formats": ["PNG", "JPEG", "TIFF", "BMP", "WEBP"],
+  "datasets": ["AI4Shipwrecks", "MILCO/NOMBO", "SubPipe"],
   "inspection_priority": {
     "weights": {"raw_confidence": 0.45, "shadow_consistency": 0.25, "local_contrast": 0.2, "normalized_area": 0.1},
     "bands": {"high": 0.75, "medium": 0.45},

@@ -31,7 +31,7 @@ def handler_for(service):
                 length=int(self.headers.get("Content-Length","0"))
                 if path=="/api/analyze":
                     if length<=0 or length>service.config["max_upload_bytes"]: return self._send(413,{"error":"image body is empty or exceeds upload limit"})
-                    body=self.rfile.read(length); filename=self.headers.get("X-Filename","upload"); source=self.headers.get("X-Source-Dataset","UNKNOWN")
+                    body=self.rfile.read(length); filename=self.headers.get("X-Filename","upload"); source=self.headers.get("X-Source-Dataset","ALL")
                     return self._send(200,service.analyze_bytes(body,filename=filename,source_dataset=source))
                 if path=="/api/review":
                     if length<=0 or length>10000: return self._send(413,{"error":"invalid review request size"})

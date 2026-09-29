@@ -1,5 +1,7 @@
 from __future__ import annotations
 import hashlib,json
+import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 from PIL import Image
@@ -20,7 +22,7 @@ class AnalysisService:
     @property
     def mode(self): return getattr(self.detector,"mode","UNAVAILABLE")
 
-    def analyze_bytes(self, content: bytes, *, filename="upload", source_dataset="UNKNOWN") -> dict:
+    def analyze_bytes(self, content: bytes, *, filename="upload", source_dataset="ALL") -> dict:
         digest=hashlib.sha256(content).hexdigest(); image_id=digest[:24]
         try:
             with Image.open(__import__("io").BytesIO(content)) as opened:
@@ -29,7 +31,22 @@ class AnalysisService:
                 opened.load(); image=opened.convert("RGB"); width,height=image.size
                 array=np.asarray(image)
         except (OSError,ValueError) as exc: raise ValueError(f"invalid or unsupported image: {exc}") from exc
-        detections=self.detector.analyze(array,image_id=image_id,source_dataset=source_dataset)
+        configured_datasets=self.config.get("datasets", [])
+        requested_dataset=(source_dataset or "ALL").strip()
+        selected_datasets=configured_datasets if requested_dataset.upper() in {"", "ALL", "UNKNOWN"} else [requested_dataset]
+        if not selected_datasets:
+            raise ValueError("no source datasets are configured")
+        detections=[]
+        for dataset in selected_datasets:
+            dataset_detections=self.detector.analyze(array,image_id=image_id,source_dataset=dataset)
+            for det in dataset_detections:
+                # The dataset loop is authoritative, even if an adapter omits or
+                # mislabels the source field in its Detection object.
+                tagged=replace(det,source_dataset=dataset)
+                if any(existing.detection_id==tagged.detection_id for existing in detections):
+                    dataset_key=re.sub(r"[^a-z0-9]+","-",dataset.lower()).strip("-") or "dataset"
+                    tagged=replace(tagged,detection_id=f"{tagged.detection_id}-{dataset_key}")
+                detections.append(tagged)
         rows=[]
         for det in detections:
             scored=self.confidence.score(array,det).to_dict()
@@ -39,7 +56,8 @@ class AnalysisService:
             rows.append({**scored,**location.to_dict(),"inspection_priority":inspection_priority(evidence,self.config)})
         reviews=self._read_reviews()
         for row in rows: row["human_review"]=reviews.get(row["detection_id"],{"status":"pending"})
-        return {"mode":self.mode,"image_id":image_id,"filename":Path(filename).name,"image_width":width,"image_height":height,"source_dataset":source_dataset,
+        response_dataset=selected_datasets[0] if len(selected_datasets)==1 else "ALL"
+        return {"mode":self.mode,"image_id":image_id,"filename":Path(filename).name,"image_width":width,"image_height":height,"source_dataset":response_dataset,"datasets":selected_datasets,
                 "detector_status":"NO_DETECTOR_CONNECTED" if self.mode=="MOCK" else self.mode,"message":"DEMO / MOCK MODE — NOT REAL DETECTOR OUTPUT" if self.mode=="MOCK" else None,
                 "detections":rows,"location_policy":"Coordinates are unavailable unless verified image-to-navigation metadata is supplied."}
 
@@ -54,4 +72,3 @@ class AnalysisService:
         reviews[detection_id]=value; self.review_store.parent.mkdir(parents=True,exist_ok=True)
         temp=self.review_store.with_suffix(".tmp"); temp.write_text(json.dumps(reviews,indent=2)); temp.replace(self.review_store)
         return {"detection_id":detection_id,"human_review":value}
-

@@ -36,9 +36,15 @@ export type Detection = {
   latitude: string;
   longitude: string;
   priority: "high" | "medium" | "low" | "uncertain";
-  status: "review" | "verified" | "natural" | "needs-verification";
+  status: "review" | "verified" | "natural" | "needs-verification" | "rejected";
   evidence: ReadonlyArray<{ label: string; description: string }>;
   recommendedAction: string;
   surveyId: string;
   change: "new" | "removed" | "persistent" | null;
+  apiId?: string;
+  sourceDataset?: string;
+  bbox?: [number, number, number, number];
+  geolocationType?: "Real" | "Simulated" | "Unavailable";
+  latitudeValue?: number | null;
+  longitudeValue?: number | null;
 };

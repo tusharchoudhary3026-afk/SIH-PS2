@@ -13,6 +13,7 @@ type SonarDashboardIntroProps = {
   description: string;
   metrics: ReadonlyArray<Metric>;
   actionLabel: string;
+  dataStatus?: string;
 };
 
 export default function SonarDashboardIntro({
@@ -20,6 +21,7 @@ export default function SonarDashboardIntro({
   description,
   metrics,
   actionLabel,
+  dataStatus = "DEMO DATA",
 }: SonarDashboardIntroProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
@@ -163,7 +165,7 @@ export default function SonarDashboardIntro({
         <div className="result-inner">
           <div className="result-heading">
             <div>
-              <span className="eyebrow result-eyebrow">Mission overview <span className="live-indicator">DEMO DATA</span></span>
+              <span className="eyebrow result-eyebrow">Mission overview <span className="live-indicator">{dataStatus}</span></span>
               <h2>From sonar data<br /><span>to actionable insight.</span></h2>
             </div>
             <p className="result-description">

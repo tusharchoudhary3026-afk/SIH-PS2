@@ -1,12 +1,12 @@
-import { demoDetections, demoSurveys } from "../state/demo-data";
+import type { Detection } from "../state/app-types";
+import type { AnalysisResult } from "../services/engine8-api";
 
-type Props = { onSelectDetection: (id: number) => void; onViewSonar: () => void };
-export default function SurveyComparisonPage({ onSelectDetection, onViewSonar }: Props) {
-  const changed = demoDetections.filter((detection) => detection.change !== null);
-  const openDetection = (id: number) => { onSelectDetection(id); onViewSonar(); };
-  return <div className="page-section"><div className="page-intro"><div><span className="eyebrow">TEMPORAL MONITORING · DEMO</span><h2>Survey comparison</h2><p>Compare repeat survey coverage to spot sample changes over time.</p></div><span className="live-indicator">AI CHANGE DETECTION · DEMO</span></div>
-    <div className="survey-compare-grid">{demoSurveys.map((survey, index) => <section className="panel survey-card" key={survey.id}><div className="section-heading"><div><span className="eyebrow">SURVEY {index + 1}</span><h3>{survey.label}</h3></div><span className="mono">{survey.date}</span></div><div className={`comparison-sonar compare-sonar-${index}`}><div className="comparison-texture" /><span className="compare-target" /></div><p>Side-scan sonar · illustrative sample</p></section>)}</div>
-    <section className="panel change-summary"><span className="eyebrow">AI CHANGE DETECTION · ILLUSTRATIVE</span><div className="change-arrow">JAN 2026 <span>↓ DETECT CHANGES ↓</span> JUN 2026</div><div className="change-counts"><div><strong>04</strong><span>New detections</span></div><div><strong>02</strong><span>Removed</span></div><div><strong>07</strong><span>Persistent</span></div></div></section>
-    <section className="changed-list"><div className="section-heading"><div><span className="eyebrow">CHANGE REGISTER</span><h2>Changed detections</h2></div></div><div className="changed-chips">{changed.map((detection) => <button key={detection.id} onClick={() => openDetection(detection.id)}><span className={`priority-pill priority-${detection.priority}`}>#{detection.id}</span><strong>{detection.type}</strong><small>{detection.change}</small><span aria-hidden="true">↗</span></button>)}</div></section>
+type Props = { detections: ReadonlyArray<Detection>; analysisResult: AnalysisResult; onSelectDetection: (id: number) => void; onViewSonar: () => void };
+
+export default function SurveyComparisonPage({ detections, analysisResult, onSelectDetection, onViewSonar }: Props) {
+  return <div className="page-section">
+    <div className="page-intro"><div><span className="eyebrow">TEMPORAL MONITORING · UPLOADED SCAN</span><h2>Survey comparison</h2><p>Compare repeat survey coverage to track newly appeared or persistent objects.</p></div><span className="live-indicator">BASELINE REQUIRED</span></div>
+    <section className="panel comparison-empty-state"><span className="eyebrow">{analysisResult.filename}</span><h3>A second survey is needed for temporal comparison</h3><p>This scan has {detections.length} returned detections. New, removed, and persistent counts need an earlier survey of the same area, so no comparison values are inferred.</p><div className="comparison-next-step"><span>Current scan</span><strong>{analysisResult.image_id}</strong><span>Baseline scan</span><strong>Not supplied</strong></div></section>
+    {detections.length > 0 && <section className="changed-list"><div className="section-heading"><div><span className="eyebrow">CURRENT SCAN</span><h2>Returned detections</h2></div><button className="text-action" onClick={onViewSonar}>Open sonar review ↓</button></div><div className="changed-chips">{detections.map((detection) => <button key={detection.id} onClick={() => { onSelectDetection(detection.id); onViewSonar(); }}><span className={`priority-pill priority-${detection.priority}`}>#{String(detection.id).padStart(2, "0")}</span><strong>{detection.type}</strong><small>{detection.sourceDataset ?? "dataset unavailable"} · {detection.confidence === null ? "un-calibrated" : `${detection.confidence}%`}</small><span aria-hidden="true">↗</span></button>)}</div></section>}
   </div>;
 }
