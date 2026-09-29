@@ -33,6 +33,7 @@ export function mapAnalysisDetections(rows: ReadonlyArray<AnalysisDetection>): R
     return {
       id: index + 1,
       apiId: row.detection_id,
+      sourceDataset: row.source_dataset,
       bbox: row.bbox,
       geolocationType: row.geolocation_type,
       latitudeValue: row.latitude,

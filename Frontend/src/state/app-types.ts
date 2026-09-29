@@ -42,6 +42,7 @@ export type Detection = {
   surveyId: string;
   change: "new" | "removed" | "persistent" | null;
   apiId?: string;
+  sourceDataset?: string;
   bbox?: [number, number, number, number];
   geolocationType?: "Real" | "Simulated" | "Unavailable";
   latitudeValue?: number | null;

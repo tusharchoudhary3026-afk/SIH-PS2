@@ -36,6 +36,7 @@ export type AnalysisResult = {
   image_width: number;
   image_height: number;
   source_dataset: string;
+  datasets?: string[];
   detector_status: string;
   message: string | null;
   detections: AnalysisDetection[];
@@ -56,14 +57,31 @@ export async function getApiHealth(): Promise<ApiHealth> {
   return decode<ApiHealth>(await fetch(`${apiBase}/api/health`));
 }
 
-export async function analyzeImage(file: File, sourceDataset: string): Promise<AnalysisResult> {
+export async function analyzeImage(file: File): Promise<AnalysisResult> {
   return decode<AnalysisResult>(await fetch(`${apiBase}/api/analyze`, {
     method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-Filename": file.name,
-      "X-Source-Dataset": sourceDataset,
-    },
+    headers: { "Content-Type": file.type || "application/octet-stream", "X-Filename": file.name, "X-Source-Dataset": "ALL" },
     body: file,
   }));
+}
+
+export async function saveReview(detectionId: string, action: "confirm" | "reject" | "flag", note = "") {
+  return decode<{ detection_id: string; human_review: { status: string; note: string; updated_at: string } }>(await fetch(`${apiBase}/api/review`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ detection_id: detectionId, action, note }),
+  }));
+}
+
+export function exportAnalysis(result: AnalysisResult, format: "json" | "csv"): void {
+  const headers = ["detection_id", "image_id", "class_name", "bbox", "raw_confidence", "calibrated_confidence", "confidence_status", "shadow_consistency", "local_contrast", "geolocation_type", "latitude", "longitude", "source_dataset", "provenance", "human_review"];
+  const csv = [headers, ...result.detections.map((detection) => headers.map((key) => detection[key as keyof AnalysisDetection]))]
+    .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\r\n");
+  const content = format === "json" ? JSON.stringify(result, null, 2) : csv;
+  const url = URL.createObjectURL(new Blob([content], { type: format === "json" ? "application/json" : "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `sonar-analysis-${result.image_id}.${format}`;
+  link.click();
+  URL.revokeObjectURL(url);
 }

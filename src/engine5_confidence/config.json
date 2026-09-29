@@ -1,0 +1,13 @@
+{
+  "feature_version": "1.0",
+  "fusion_model": "logistic_regression",
+  "calibration_method": "platt",
+  "false_positive_filter": {
+    "raw_reject_below": 0.1,
+    "raw_keep_at_or_above": 0.75,
+    "fusion_reject_below": 0.2,
+    "fusion_keep_at_or_above": 0.8,
+    "note": "Conservative configurable development defaults. Validate thresholds on labeled held-out sonar data before operational use."
+  },
+  "feature_names": ["raw_confidence", "shadow_consistency", "local_contrast", "log_aspect_ratio", "normalized_area"]
+}

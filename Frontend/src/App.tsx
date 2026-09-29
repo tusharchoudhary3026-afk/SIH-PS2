@@ -43,8 +43,7 @@ export default function App() {
   };
   const receiveAnalysis = (result: AnalysisResult | null) => {
     setAnalysisResult(result);
-    const firstDetection = result?.detections.length ? 1 : null;
-    setSelectedDetectionId(firstDetection);
+    setSelectedDetectionId(result?.detections.length ? 1 : null);
   };
   const viewSonar = () => document.getElementById("sonar-analysis")?.scrollIntoView({ behavior: "smooth", block: "start" });
   const changePreferences = (next: AnalysisPreferences) => {
@@ -64,7 +63,7 @@ export default function App() {
     {analysisResult && <>
       <section id="detections" className="scroll-section"><DetectionsPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={(id) => { selectDetection(id); viewSonar(); }} /></section>
       <section id="detection-map" className="scroll-section"><DetectionMapPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
-      <section id="survey-comparison" className="scroll-section"><SurveyComparisonPage detections={detections} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
+      <section id="survey-comparison" className="scroll-section"><SurveyComparisonPage detections={detections} analysisResult={analysisResult} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
       <section id="analytics" className="scroll-section"><AnalyticsPage detections={detections} analysisResult={analysisResult} /></section>
       <section id="reports" className="scroll-section"><ReportsPage detections={detections} analysisResult={analysisResult} /></section>
       <section id="settings" className="scroll-section"><SettingsPage preferences={preferences} onChange={changePreferences} storageMessage={storageMessage} /></section>
