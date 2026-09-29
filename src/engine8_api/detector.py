@@ -16,9 +16,10 @@ class MockDetector:
         """Return one deterministic, explicitly synthetic sample per dataset run."""
         height, width = image.shape[:2]
         datasets = {
-            "AI4Shipwrecks": (0, "Ghost Net", 0.24, 0.28, 0.92),
-            "MILCO/NOMBO": (1, "Metal Debris", 0.54, 0.48, 0.84),
-            "SubPipe": (2, "Cable", 0.72, 0.68, 0.78),
+            "AI4Shipwrecks": (1, "Shipwreck", 0.24, 0.28, 0.92),
+            "MILCO/NOMBO": (2, "Mine-like Contact", 0.54, 0.48, 0.84),
+            "SubPipe": (0, "Pipe", 0.72, 0.68, 0.78),
+            "PINGEcosystem": (3, "Crab Pot", 0.38, 0.72, 0.81),
         }
         class_id, class_name, center_x, center_y, score = datasets.get(
             source_dataset, (3, "Unknown Object", 0.48, 0.54, 0.70)

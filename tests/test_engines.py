@@ -192,9 +192,9 @@ class Engine8Tests(unittest.TestCase):
         status,body,_=self.request("/api/health"); self.assertEqual(status,200); self.assertEqual(json.loads(body)["mode"],"MOCK")
         status,body,_=self.request("/api/analyze","POST",png_bytes(),{"Content-Type":"image/png","X-Filename":"fixture.png","X-Source-Dataset":"ALL"})
         result=json.loads(body); self.assertEqual(status,200); self.assertIn("MOCK",result["message"])
-        self.assertEqual(result["datasets"],["AI4Shipwrecks","MILCO/NOMBO","SubPipe"])
+        self.assertEqual(result["datasets"],["AI4Shipwrecks","MILCO/NOMBO","SubPipe","PINGEcosystem"])
         self.assertEqual({item["source_dataset"] for item in result["detections"]},set(result["datasets"]))
-        self.assertEqual(len(result["detections"]),3)
+        self.assertEqual(len(result["detections"]),4)
 
     def test_injected_test_detector_flows_through_engines_5_and_6(self):
         # This detector and its prediction exist only as a synthetic test fixture.
@@ -225,6 +225,17 @@ class Engine8Tests(unittest.TestCase):
     def test_invalid_image_rejected(self):
         status,body,_=self.request("/api/analyze","POST",b"not image",{"Content-Type":"image/png"})
         self.assertEqual(status,400); self.assertIn(b"invalid",body)
+
+    def test_unconfigured_dataset_rejected(self):
+        status,body,_=self.request("/api/analyze","POST",png_bytes(),{"Content-Type":"image/png","X-Source-Dataset":"made-up"})
+        self.assertEqual(status,400); self.assertIn(b"unsupported source dataset",body)
+
+    def test_review_requires_object_and_string_fields(self):
+        status,body,_=self.request("/api/review","POST",b"[]",{"Content-Type":"application/json"})
+        self.assertEqual(status,400); self.assertIn(b"JSON object",body)
+        payload=json.dumps({"detection_id":[],"action":"confirm","note":""}).encode()
+        status,body,_=self.request("/api/review","POST",payload,{"Content-Type":"application/json"})
+        self.assertEqual(status,400); self.assertIn(b"must be strings",body)
 
 
 if __name__=="__main__": unittest.main()

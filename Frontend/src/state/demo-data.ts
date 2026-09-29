@@ -13,7 +13,7 @@ export const demoQuality: QualitySummary = {
   coverage: "good",
 };
 
-const types = ["Ghost Net", "Metal", "Rock", "Cable", "Coral", "Ghost Net", "Sand Ripple"];
+const types = ["Ghost Net (experimental)", "Pipe", "Rock", "Shipwreck", "Coral", "Mine-like Contact", "Sand Ripple", "Crab Pot"];
 const highIds = new Set([17, 18, 20, 22, 24, 26, 28, 30]);
 const changes = new Map<number, Detection["change"]>([
   [17, "new"], [18, "new"], [20, "new"], [22, "new"],
@@ -23,7 +23,7 @@ const changes = new Map<number, Detection["change"]>([
 ]);
 
 function createDetection(id: number): Detection {
-  const type = id === 17 ? "Ghost Net" : types[(id - 1) % types.length];
+  const type = id === 17 ? "Ghost Net (experimental)" : types[(id - 1) % types.length];
   const priority: Detection["priority"] = highIds.has(id)
     ? "high"
     : id % 4 === 0 ? "medium" : id % 5 === 0 ? "uncertain" : "low";
@@ -43,8 +43,11 @@ function createDetection(id: number): Detection {
     type,
     confidence: id === 19 ? null : id === 17 ? 91 : 72 + ((id * 7) % 24),
     estimatedSizeM: id === 19 ? null : id === 17 ? 8.4 : Number((2.5 + ((id * 13) % 90) / 10).toFixed(1)),
-    latitude: `18.${String(4200 + id * 17).padStart(5, "0")}° N`,
-    longitude: `72.${String(8100 + id * 13).padStart(5, "0")}° E`,
+    latitude: `SIMULATED · 18.${String(4200 + id * 17).padStart(5, "0")}° N`,
+    longitude: `SIMULATED · 72.${String(8100 + id * 13).padStart(5, "0")}° E`,
+    geolocationType: "Simulated",
+    latitudeValue: 18.42 + id * 0.0017,
+    longitudeValue: 72.81 + id * 0.0013,
     priority,
     status: type === "Rock" || type === "Coral" || type === "Sand Ripple"
       ? "natural"

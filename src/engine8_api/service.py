@@ -36,6 +36,9 @@ class AnalysisService:
         selected_datasets=configured_datasets if requested_dataset.upper() in {"", "ALL", "UNKNOWN"} else [requested_dataset]
         if not selected_datasets:
             raise ValueError("no source datasets are configured")
+        unknown_datasets=[dataset for dataset in selected_datasets if dataset not in configured_datasets]
+        if unknown_datasets:
+            raise ValueError(f"unsupported source dataset: {', '.join(unknown_datasets)}")
         detections=[]
         for dataset in selected_datasets:
             dataset_detections=self.detector.analyze(array,image_id=image_id,source_dataset=dataset)
@@ -66,6 +69,8 @@ class AnalysisService:
         except (FileNotFoundError,json.JSONDecodeError): return {}
 
     def save_review(self,detection_id: str, action: str, note: str="") -> dict:
+        if not isinstance(detection_id, str) or not isinstance(action, str) or not isinstance(note, str):
+            raise ValueError("detection_id, action, and note must be strings")
         if action not in {"confirm","reject","flag"}: raise ValueError("action must be confirm, reject, or flag")
         if not detection_id or len(detection_id)>200: raise ValueError("invalid detection_id")
         reviews=self._read_reviews(); value={"status":action,"note":note[:2000],"updated_at":__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()}

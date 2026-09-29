@@ -4,7 +4,7 @@
 
 Engine 5 (confidence/evidence infrastructure), Engine 6 (metadata-grounded geolocation), Engine 7 (evaluation infrastructure), and Engine 8 (local API and dashboard integration) are implemented as modular infrastructure. **Engine 4 and SubPipe integration are pending.** No trained detector is bundled and no project performance metrics are available.
 
-The Engine 8 development `MockDetector` returns one synthetic, clearly labeled sample for each configured source dataset. These are pipeline/UI fixtures, not detector predictions. No trained detector is bundled and no project performance metrics are available.
+The Engine 8 development `MockDetector` returns one synthetic, clearly labeled sample for each configured source dataset, mapped to the scope's four core class names (Pipe, Shipwreck, Mine-like Contact, and Crab Pot). These are pipeline/UI fixtures, not detector predictions. No trained detector or downloaded project datasets are bundled, and no project performance metrics are available. Ghost Net remains an experimental extension, not a validated core class.
 
 ## Start the backend
 
@@ -26,7 +26,7 @@ npm ci
 npm run dev
 ```
 
-Set `VITE_API_BASE_URL` at frontend build/dev time to use a different local API origin. The browser sends one uploaded image to all configured datasets when **Start scanning** is selected.
+Set `VITE_API_BASE_URL` at frontend build/dev time to use a different local API origin. The browser sends one uploaded image to all configured datasets (AI4Shipwrecks, MILCO/NOMBO, SubPipe, and PINGEcosystem) when **Start scanning** is selected. Dataset names describe intended provenance; no source dataset is bundled or queried by the mock adapter.
 
 ## Engine 4 detector contract
 

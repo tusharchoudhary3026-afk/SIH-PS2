@@ -35,7 +35,9 @@ def handler_for(service):
                     return self._send(200,service.analyze_bytes(body,filename=filename,source_dataset=source))
                 if path=="/api/review":
                     if length<=0 or length>10000: return self._send(413,{"error":"invalid review request size"})
-                    data=json.loads(self.rfile.read(length)); return self._send(200,service.save_review(str(data.get("detection_id","")),str(data.get("action","")),str(data.get("note",""))))
+                    data=json.loads(self.rfile.read(length))
+                    if not isinstance(data,dict): return self._send(400,{"error":"review body must be a JSON object"})
+                    return self._send(200,service.save_review(data.get("detection_id",""),data.get("action",""),data.get("note","")))
                 return self._send(404,{"error":"not found"})
             except (ValueError,json.JSONDecodeError) as exc: return self._send(400,{"error":str(exc)})
             except Exception as exc: return self._send(500,{"error":str(exc)})
