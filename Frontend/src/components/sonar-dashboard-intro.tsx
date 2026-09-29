@@ -56,7 +56,15 @@ export default function SonarDashboardIntro({
       }
     };
     const sectionTop = viewportElement.getBoundingClientRect().top + window.scrollY;
-    const updateScroll = () => setScrollY(Math.max(0, window.scrollY - sectionTop));
+    let scrollFrame = 0;
+    const updateScroll = () => {
+      if (scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        scrollFrame = 0;
+        const nextScrollY = Math.max(0, window.scrollY - sectionTop);
+        setScrollY((current) => current === nextScrollY ? current : nextScrollY);
+      });
+    };
 
     measure();
     updateScroll();
@@ -74,6 +82,7 @@ export default function SonarDashboardIntro({
 
     return () => {
       observer?.disconnect();
+      if (scrollFrame) window.cancelAnimationFrame(scrollFrame);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", updateScroll);
     };
@@ -124,6 +133,7 @@ export default function SonarDashboardIntro({
     >
       <div className="sonar-track">
         <section ref={heroRef} className="sonar-hero" aria-label="Marine debris intelligence dashboard">
+          {!staticFallback && <div className="sonar-radar-sweep" aria-hidden="true" />}
           {!staticFallback && (
             <div
               aria-hidden="true"
@@ -136,7 +146,7 @@ export default function SonarDashboardIntro({
             />
           )}
           <div className="sonar-copy sonar-copy-base">
-            <span className="eyebrow"><span className="status-dot" /> Ocean intelligence platform</span>
+            <span className="eyebrow"><span className="status-dot" /> SEVORA · Side-scan intelligence</span>
             <h1>{title}</h1>
             <p>{description}</p>
             <span className="hero-caption">SCAN <i /> DETECT <i /> CLASSIFY <i /> PRIORITIZE</span>
@@ -147,7 +157,7 @@ export default function SonarDashboardIntro({
               className="sonar-copy sonar-copy-inverse"
               style={{ clipPath: `circle(${circleSize / 2}px at ${circleX}px ${circleY}px)` }}
             >
-              <span className="eyebrow"><span className="status-dot" /> Ocean intelligence platform</span>
+              <span className="eyebrow"><span className="status-dot" /> SEVORA · Side-scan intelligence</span>
               <h1>{title}</h1>
               <p>{description}</p>
               <span className="hero-caption">SCAN <i /> DETECT <i /> CLASSIFY <i /> PRIORITIZE</span>
@@ -169,11 +179,11 @@ export default function SonarDashboardIntro({
               <h2>From sonar data<br /><span>to actionable insight.</span></h2>
             </div>
             <p className="result-description">
-              Surface priority debris, review scan quality, and move from a survey to a clearer picture of the seafloor.
+              Review side-scan imagery, inspect candidate debris, and check survey evidence before taking action.
             </p>
           </div>
 
-          <div className="metrics-grid" aria-label="Demo survey statistics">
+          <div className="metrics-grid" aria-label={dataStatus === "DEMO DATA" ? "System capabilities" : "Current scan summary"}>
             {metrics.map((metric, index) => (
               <article className={`metric-card tone-${metric.tone}`} key={metric.label}>
                 <div className="metric-topline">
@@ -185,6 +195,25 @@ export default function SonarDashboardIntro({
               </article>
             ))}
           </div>
+
+          <section className="mission-brief" aria-label="SEVORA detection scope">
+            <div className="mission-brief-heading">
+              <span className="eyebrow">SYSTEM SCOPE</span>
+              <p>What SEVORA checks in a sonar survey</p>
+            </div>
+            <div className="target-class-list" aria-label="Four target classes">
+              {["Pipe", "Shipwreck", "Mine-like Contact", "Crab Pot"].map((target, index) => (
+                <span className="target-class-chip" key={target}><i>0{index + 1}</i>{target}</span>
+              ))}
+            </div>
+            <div className="mission-workflow" aria-label="Analysis workflow">
+              <article><span>01 / INPUT</span><strong>Side-scan image</strong><p>Review the uploaded survey return.</p></article>
+              <article><span>02 / SCREEN</span><strong>Candidate targets</strong><p>Inspect detector boxes and scores.</p></article>
+              <article><span>03 / EVIDENCE</span><strong>Image cues</strong><p>Compare local contrast and shadow heuristics.</p></article>
+              <article><span>04 / REVIEW</span><strong>Human decision</strong><p>Confirm, reject, or flag each finding.</p></article>
+            </div>
+            <p className="mission-location-note">Coordinates are shown only when verified navigation metadata is supplied. Shadow and contrast cues support review; they are not standalone proof.</p>
+          </section>
 
           <div className="workspace-row">
             <div className="workspace-copy">
@@ -198,7 +227,7 @@ export default function SonarDashboardIntro({
           </div>
 
           <div className="result-footer">
-            <span>MARINE DEBRIS INTELLIGENCE</span>
+            <span>SEVORA · UNDERWATER SONAR INTELLIGENCE</span>
             <span>DETECT WITH CLARITY <i /> PROTECT THE SEAFLOOR</span>
           </div>
         </div>

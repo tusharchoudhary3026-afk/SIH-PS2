@@ -129,9 +129,8 @@ export default function SectionNav({ analysisAvailable = true }: { analysisAvail
   };
 
   return <header className={`section-nav-wrap${isScrolled ? " is-scrolled" : ""}`}>
-    <a className="section-nav-brand" href="#dashboard" onClick={(event) => navigateTo(event, "dashboard")} aria-label="Marine Debris Intelligence overview">
-      <span className="section-nav-logo" aria-hidden="true"><i /><i /><i /></span>
-      <span className="section-nav-brand-copy"><strong>MARINE AI</strong><small>DEBRIS INTELLIGENCE</small></span>
+    <a className="section-nav-brand" href="#dashboard" onClick={(event) => navigateTo(event, "dashboard")} aria-label="SEVORA mission overview">
+      <img className="section-nav-logo-image" src="/sevora-logo.jpg" alt="SEVORA — underwater sonar intelligence" />
     </a>
     <div className="section-nav-clip">
       <nav ref={navRef} className="section-nav" aria-label="Page sections">

@@ -15,7 +15,7 @@ def handler_for(service):
         def do_OPTIONS(self): self._send(204,b"")
         def do_GET(self):
             path=urlparse(self.path).path
-            if path=="/api/health": return self._send(200,{"status":"ok","mode":service.mode,"engine4":"PENDING","subpipe":"PENDING"})
+            if path=="/api/health": return self._send(200,{"status":"ok","mode":service.mode,"engine4":"READY" if service.mode=="REAL" else "MOCK","subpipe":"PENDING"})
             if path=="/api/reviews": return self._send(200,service._read_reviews())
             if path=="/api/export":
                 reviews=service._read_reviews(); fmt=parse_qs(urlparse(self.path).query).get("format",["json"])[0]

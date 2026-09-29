@@ -13,9 +13,25 @@ type Props = {
   onPreferencesChange: (preferences: AnalysisPreferences) => void;
   analysisResult: AnalysisResult | null;
   onAnalysisResult: (result: AnalysisResult | null) => void;
+  activeResultTab: AnalysisResultTab;
+  onResultTabChange: (tab: AnalysisResultTab) => void;
 };
 
-export default function SonarAnalysisPage({ detections, selectedDetectionId, onSelectDetection, preferences, onPreferencesChange, analysisResult, onAnalysisResult }: Props) {
+export const analysisResultTabs = [
+  { id: "engine-results", label: "Engine results" },
+  { id: "detection-evidence", label: "Why was this detected?" },
+  { id: "detection-register", label: "Detection register" },
+  { id: "coordinate-plot", label: "Detection coordinate plot" },
+  { id: "survey-comparison", label: "Survey comparison" },
+  { id: "returned-detections", label: "Returned detections" },
+  { id: "analytics", label: "Analytics" },
+  { id: "reports", label: "Detection reports" },
+  { id: "settings", label: "Analysis settings" },
+] as const;
+
+export type AnalysisResultTab = (typeof analysisResultTabs)[number]["id"];
+
+export default function SonarAnalysisPage({ detections, selectedDetectionId, onSelectDetection, preferences, onPreferencesChange, analysisResult, onAnalysisResult, activeResultTab, onResultTabChange }: Props) {
   const [zoom, setZoom] = useState(100);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -23,6 +39,7 @@ export default function SonarAnalysisPage({ detections, selectedDetectionId, onS
   const [validationError, setValidationError] = useState("");
   const [analysisState, setAnalysisState] = useState<"idle" | "running" | "complete">("idle");
   const [scanMode, setScanMode] = useState("");
+  const [sourceDataset, setSourceDataset] = useState("ALL");
   const [apiHealth, setApiHealth] = useState<ApiHealth | null>(null);
   const [reviewMessage, setReviewMessage] = useState("");
   const [selectedApiId, setSelectedApiId] = useState<string | null>(null);
@@ -44,7 +61,7 @@ export default function SonarAnalysisPage({ detections, selectedDetectionId, onS
     const index = analysisResult?.detections.findIndex((item) => item.detection_id === id) ?? -1;
     if (index >= 0) onSelectDetection(index + 1);
   };
-  const runAnalysis = async (file: File) => {
+  const runAnalysis = async (file: File, dataset: string) => {
     setAnalysisState("running");
     setUploadError("");
     setValidationError("");
@@ -52,7 +69,7 @@ export default function SonarAnalysisPage({ detections, selectedDetectionId, onS
     setSelectedApiId(null);
     onAnalysisResult(null);
     try {
-      const result = await analyzeImage(file);
+      const result = await analyzeImage(file, dataset);
       onAnalysisResult(result);
       setAnalysisState("complete");
     } catch (error) {
@@ -84,7 +101,7 @@ export default function SonarAnalysisPage({ detections, selectedDetectionId, onS
       setValidationError(`Before scanning, ${missing.join(" and ")}.`);
       return;
     }
-    void runAnalysis(selectedFile!);
+    void runAnalysis(selectedFile!, sourceDataset);
   };
   const resetScan = () => {
     setImageUrl((previous) => { if (previous) URL.revokeObjectURL(previous); return null; });
@@ -146,6 +163,7 @@ export default function SonarAnalysisPage({ detections, selectedDetectionId, onS
         <div className="scan-upload-controls">
           <label className={`scan-upload-drop${selectedFile ? " has-file" : ""}`}><input type="file" accept="image/*" disabled={analysisState === "running"} onChange={(event) => { onUpload(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /><span className="upload-icon">↑</span><strong>{selectedFile ? selectedFile.name : "Choose a sonar image"}</strong><small>{selectedFile ? "Image ready. Scanning starts only when you press the button below." : "PNG, JPEG, TIFF, or another supported image format"}</small></label>
           <label className="dataset-select"><span>Scan mode <b aria-hidden="true">Required</b></span><select required value={scanMode} disabled={analysisState === "running"} aria-invalid={Boolean(validationError && !scanMode)} onChange={(event) => { setScanMode(event.currentTarget.value); setValidationError(""); }}><option value="">Select a scan mode</option><option value="FULL">Full analysis</option></select></label>
+          <label className="dataset-select"><span>Image source <small>Optional</small></span><select value={sourceDataset} disabled={analysisState === "running"} onChange={(event) => setSourceDataset(event.currentTarget.value)}><option value="ALL">All mock examples / unknown real source</option><option value="AI4Shipwrecks">AI4Shipwrecks</option><option value="MILCO/NOMBO">MILCO/NOMBO</option><option value="SubPipe">SubPipe</option><option value="PINGEcosystem">PINGEcosystem</option><option value="UNKNOWN">Unknown</option></select></label>
           <button className="primary-button start-scan-button" type="button" disabled={analysisState === "running"} onClick={startScan}>{analysisState === "running" ? "Scanning image…" : "Start scanning"}<span>→</span></button>
           {analysisState === "running" && <p className="scan-progress" role="status"><span className="scan-spinner" /> Uploading and analyzing image…</p>}
           {validationError && <p className="inline-alert" role="alert">{validationError}</p>}
@@ -158,13 +176,16 @@ export default function SonarAnalysisPage({ detections, selectedDetectionId, onS
 
   return <div className="analysis-page page-section">
     <div className="page-intro"><div><span className="eyebrow">UPLOAD ANALYSIS · {analysisResult.filename}</span><h2>Review the seafloor return</h2><p>Review the detections and evidence returned for this uploaded image.</p></div><div className="control-row"><span className={`analysis-status ${analysisState === "complete" ? "complete" : ""}`}>ANALYSIS COMPLETE · {analysisResult.mode}</span><label className="upload-button">↑ New Scan<input type="file" accept="image/*" onChange={(event) => { onUpload(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /></label></div></div>
-    {analysisResult.mode === "MOCK" && <p className="mock-mode-banner" role="status">MOCK SAMPLE DATA · Shipwreck, Mine-like Contact, Pipe, and Crab Pot rows are synthetic placeholders. Their locations do not come from this image, so image boxes and sample crops are hidden.</p>}
+    {analysisResult.mode === "MOCK" && <p className="mock-mode-banner" role="status">MOCK MODE · These class labels and raw scores are demo fixtures, not predictions from this image. Evidence and priority values belong to those sample rows; no location is inferred. Connect a trained detector to see real model output.</p>}
+    <nav className="analysis-result-nav" aria-label="Analysis result sections">
+      {analysisResultTabs.map((tab) => <button key={tab.id} type="button" className={activeResultTab === tab.id ? "is-active" : ""} aria-pressed={activeResultTab === tab.id} onClick={() => onResultTabChange(tab.id)}>{tab.label}</button>)}
+    </nav>
     <div className="analysis-layout"><section className="analysis-main">
       <SonarViewer detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={onSelectDetection} preferences={preferences} imageUrl={imageUrl} imageLabel={analysisResult.filename} onImageError={onImageError} zoom={zoom} compare={false} apiDetections={analysisResult.detections} apiImageSize={{ width: analysisResult.image_width, height: analysisResult.image_height }} showApiDetections={analysisResult.mode === "REAL"} onSelectApiDetection={selectApiDetection} />
       <div className="control-deck"><div className="control-row"><button className="secondary-button" onClick={resetScan}>← Upload another image</button><button className="toggle-button" aria-pressed={preferences.showDetections} onClick={() => togglePreference("showDetections")}>Detection overlay <b>{preferences.showDetections ? "ON" : "OFF"}</b></button><button className="toggle-button" disabled title="The API returns shadow evidence values, not a shadow mask overlay.">Acoustic shadow <b>API EVIDENCE</b></button><button className="toggle-button" disabled title="A second survey is required for comparison.">Compare <b>NEEDS BASELINE</b></button><div className="zoom-control"><button aria-label="Zoom out" onClick={() => setZoom(Math.max(50, zoom - 10))}>−</button><span>{zoom}%</span><button aria-label="Zoom in" onClick={() => setZoom(Math.min(200, zoom + 10))}>+</button></div></div></div>
-      <section className="api-result panel"><div className="section-heading"><div><span className="eyebrow">{analysisResult.mode} · {analysisResult.datasets?.join(" + ") || analysisResult.source_dataset}</span><h3>Engine results</h3></div><div className="control-row"><button className="secondary-button" onClick={() => exportAnalysis(analysisResult, "json")}>Export JSON</button><button className="secondary-button" onClick={() => exportAnalysis(analysisResult, "csv")}>Export CSV</button></div></div><p>{analysisResult.message ?? analysisResult.detector_status} · {analysisResult.detections.length} detections · {analysisResult.image_width} × {analysisResult.image_height}px</p>
-        {analysisResult.detections.length === 0 ? <div className="empty-analysis"><strong>No detections returned for this image.</strong><p>The frontend is showing the backend response as received; it does not fill in demo detections.</p></div> : <>{analysisResult.mode !== "MOCK" && cropUrl && <figure><img className="evidence-crop" src={cropUrl} alt="Crop for selected detector result" /><figcaption>Selected crop · {selectedApi?.class_name}</figcaption></figure>}{datasetGroups.map((group) => <section className="dataset-result-group" key={group.dataset}><div className="dataset-result-heading"><span className="eyebrow">SOURCE DATASET</span><strong>{group.dataset}</strong><span>{group.detections.length} {group.detections.length === 1 ? "detection" : "detections"}</span></div>{[...group.detections].sort((left, right) => (right.inspection_priority.score ?? -1) - (left.inspection_priority.score ?? -1)).map((item: AnalysisDetection) => <article className="api-detection-detail" key={item.detection_id}><strong>{item.class_name}</strong><span className="dataset-badge">{item.source_dataset}{analysisResult.mode === "MOCK" ? " · MOCK SAMPLE" : ""}</span><p>Raw detector score: {item.raw_confidence.toFixed(3)} · Calibrated confidence: {item.calibrated_confidence === null ? "Unavailable" : item.calibrated_confidence.toFixed(3)} ({item.confidence_status})</p><p>Shadow consistency: {item.shadow_consistency?.toFixed(3) ?? "Unavailable"} · Local contrast: {item.local_contrast?.toFixed(3) ?? "Unavailable"} · Aspect ratio: {item.aspect_ratio.toFixed(3)}</p><p>Geolocation: {item.geolocation_type}{item.latitude !== null && item.longitude !== null ? ` · ${item.latitude}, ${item.longitude}` : " · unavailable"} · {item.geolocation_status}</p><p>Inspection priority: {item.inspection_priority.band} · {item.inspection_priority.score?.toFixed(3) ?? "Unavailable"} · review {item.human_review.status}</p><div className="control-row"><button className="secondary-button" onClick={() => { setSelectedApiId(item.detection_id); void review("confirm", item.detection_id); }}>Confirm</button><button className="secondary-button" onClick={() => { setSelectedApiId(item.detection_id); void review("reject", item.detection_id); }}>Reject</button><button className="secondary-button" onClick={() => { setSelectedApiId(item.detection_id); void review("flag", item.detection_id); }}>Flag for review</button></div></article>)}</section>)}</>}{reviewMessage && <p role="status">{reviewMessage}</p>}</section>
-      <section className="evidence-section"><div className="section-heading"><div><span className="eyebrow">ENGINE EVIDENCE</span><h2>Why was this detected?</h2></div></div>{selected ? <div className="evidence-grid">{selected.evidence.map((item, index) => <EvidenceCard key={item.label} index={`0${index + 1}`} label={item.label} description={item.description} />)}</div> : <p className="empty-analysis">No detection evidence is available for this scan.</p>}</section>
     </section><aside className="analysis-aside"><DetectionDetailPanel detection={selected} /><div className="panel scan-context"><span className="eyebrow">UPLOADED IMAGE</span><h3>{analysisResult.filename}</h3><p>Image ID: {analysisResult.image_id}<br />Dimensions: {analysisResult.image_width} × {analysisResult.image_height}px<br />Datasets: {analysisResult.datasets?.join(", ") ?? analysisResult.source_dataset}</p><span className="context-badge">{analysisResult.detector_status}</span><p className="demo-note">{analysisResult.location_policy}</p></div></aside></div>
+    {activeResultTab === "engine-results" && <section id="active-result-view" className="api-result panel result-panel"><div className="section-heading"><div><span className="eyebrow">{analysisResult.mode} · {analysisResult.datasets?.join(" + ") || analysisResult.source_dataset}</span><h3>Engine results</h3></div><div className="control-row"><button className="secondary-button" onClick={() => exportAnalysis(analysisResult, "json")}>Export JSON</button><button className="secondary-button" onClick={() => exportAnalysis(analysisResult, "csv")}>Export CSV</button></div></div><p>{analysisResult.message ?? analysisResult.detector_status} · {analysisResult.detections.length} detections · {analysisResult.image_width} × {analysisResult.image_height}px</p>
+      {analysisResult.detections.length === 0 ? <div className="empty-analysis"><strong>No detections returned for this image.</strong><p>The frontend is showing the backend response as received; it does not fill in demo detections.</p></div> : <>{analysisResult.mode !== "MOCK" && cropUrl && <figure><img className="evidence-crop" src={cropUrl} alt="Crop for selected detector result" /><figcaption>Selected crop · {selectedApi?.class_name}</figcaption></figure>}{datasetGroups.map((group) => <section className="dataset-result-group" key={group.dataset}><div className="dataset-result-heading"><span className="eyebrow">SOURCE DATASET</span><strong>{group.dataset}</strong><span>{group.detections.length} {group.detections.length === 1 ? "detection" : "detections"}</span></div>{[...group.detections].sort((left, right) => (right.inspection_priority.score ?? -1) - (left.inspection_priority.score ?? -1)).map((item: AnalysisDetection) => <article className="api-detection-detail" key={item.detection_id}><strong>{item.class_name}</strong><span className="dataset-badge">{item.source_dataset}{analysisResult.mode === "MOCK" ? " · MOCK SAMPLE" : ""}</span><p>Raw detector score: {item.raw_confidence.toFixed(3)} · Calibrated confidence: {item.calibrated_confidence === null ? "Unavailable" : item.calibrated_confidence.toFixed(3)} ({item.confidence_status})</p><p>Shadow consistency: {item.shadow_consistency?.toFixed(3) ?? "Unavailable"} · Local contrast: {item.local_contrast?.toFixed(3) ?? "Unavailable"} · Aspect ratio: {item.aspect_ratio.toFixed(3)}</p><p>Geolocation: {item.geolocation_type}{item.latitude !== null && item.longitude !== null ? ` · ${item.latitude}, ${item.longitude}` : " · unavailable"} · {item.geolocation_status}</p><p>Inspection priority: {item.inspection_priority.band} · {item.inspection_priority.score?.toFixed(3) ?? "Unavailable"} · review {item.human_review.status}</p><div className="control-row"><button className="secondary-button" onClick={() => { setSelectedApiId(item.detection_id); void review("confirm", item.detection_id); }}>Confirm</button><button className="secondary-button" onClick={() => { setSelectedApiId(item.detection_id); void review("reject", item.detection_id); }}>Reject</button><button className="secondary-button" onClick={() => { setSelectedApiId(item.detection_id); void review("flag", item.detection_id); }}>Flag for review</button></div></article>)}</section>)}</>}{reviewMessage && <p role="status">{reviewMessage}</p>}</section>}
+    {activeResultTab === "detection-evidence" && <section id="active-result-view" className="evidence-section result-panel"><div className="section-heading"><div><span className="eyebrow">ENGINE EVIDENCE</span><h2>Why was this detected?</h2></div></div>{selected ? <div className="evidence-grid">{selected.evidence.map((item, index) => <EvidenceCard key={item.label} index={`0${index + 1}`} label={item.label} description={item.description} />)}</div> : <p className="empty-analysis">No detection evidence is available for this scan.</p>}</section>}
   </div>;
 }

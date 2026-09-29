@@ -57,10 +57,10 @@ export async function getApiHealth(): Promise<ApiHealth> {
   return decode<ApiHealth>(await fetch(`${apiBase}/api/health`));
 }
 
-export async function analyzeImage(file: File): Promise<AnalysisResult> {
+export async function analyzeImage(file: File, sourceDataset = "ALL"): Promise<AnalysisResult> {
   return decode<AnalysisResult>(await fetch(`${apiBase}/api/analyze`, {
     method: "POST",
-    headers: { "Content-Type": file.type || "application/octet-stream", "X-Filename": file.name, "X-Source-Dataset": "ALL" },
+    headers: { "Content-Type": file.type || "application/octet-stream", "X-Filename": file.name, "X-Source-Dataset": sourceDataset },
     body: file,
   }));
 }

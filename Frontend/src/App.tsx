@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SectionNav from "./components/section-nav";
 import DashboardPage from "./pages/dashboard-page";
-import SonarAnalysisPage from "./pages/sonar-analysis-page";
+import SonarAnalysisPage, { type AnalysisResultTab } from "./pages/sonar-analysis-page";
 import DetectionsPage from "./pages/detections-page";
 import DetectionMapPage from "./pages/detection-map-page";
 import SurveyComparisonPage from "./pages/survey-comparison-page";
@@ -33,6 +33,7 @@ function loadPreferences(): { value: AnalysisPreferences; message: string } {
 export default function App() {
   const [selectedDetectionId, setSelectedDetectionId] = useState<number | null>(17);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [activeResultTab, setActiveResultTab] = useState<AnalysisResultTab>("engine-results");
   const [loadedPreferences] = useState(loadPreferences);
   const [preferences, setPreferences] = useState<AnalysisPreferences>(loadedPreferences.value);
   const [storageMessage, setStorageMessage] = useState(loadedPreferences.message);
@@ -44,8 +45,13 @@ export default function App() {
   const receiveAnalysis = (result: AnalysisResult | null) => {
     setAnalysisResult(result);
     setSelectedDetectionId(result?.detections.length ? 1 : null);
+    if (result) setActiveResultTab("engine-results");
   };
   const viewSonar = () => document.getElementById("sonar-analysis")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const changeResultTab = (tab: AnalysisResultTab) => {
+    setActiveResultTab(tab);
+    window.setTimeout(() => document.getElementById("active-result-view")?.scrollIntoView({ behavior: "smooth", block: "start" }), 40);
+  };
   const changePreferences = (next: AnalysisPreferences) => {
     setPreferences(next);
     try {
@@ -57,16 +63,18 @@ export default function App() {
   };
 
   return <main className="page-content scroll-page">
-    <SectionNav analysisAvailable={analysisResult !== null} />
-    <section id="dashboard" className="scroll-section scroll-section-hero"><DashboardPage detections={detections} analysisResult={analysisResult} onViewSonar={viewSonar} onSelectDetection={selectDetection} /></section>
-    <section id="sonar-analysis" className="scroll-section"><SonarAnalysisPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} preferences={preferences} onPreferencesChange={changePreferences} analysisResult={analysisResult} onAnalysisResult={receiveAnalysis} /></section>
-    {analysisResult && <>
-      <section id="detections" className="scroll-section"><DetectionsPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={(id) => { selectDetection(id); viewSonar(); }} /></section>
-      <section id="detection-map" className="scroll-section"><DetectionMapPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
-      <section id="survey-comparison" className="scroll-section"><SurveyComparisonPage detections={detections} analysisResult={analysisResult} onSelectDetection={selectDetection} onViewSonar={viewSonar} /></section>
-      <section id="analytics" className="scroll-section"><AnalyticsPage detections={detections} analysisResult={analysisResult} /></section>
-      <section id="reports" className="scroll-section"><ReportsPage detections={detections} analysisResult={analysisResult} /></section>
-      <section id="settings" className="scroll-section"><SettingsPage preferences={preferences} onChange={changePreferences} storageMessage={storageMessage} /></section>
-    </>}
+    <SectionNav analysisAvailable={false} />
+    <section id="dashboard" className="scroll-section scroll-section-hero"><DashboardPage analysisResult={analysisResult} /></section>
+    <section id="sonar-analysis" className="scroll-section"><SonarAnalysisPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} preferences={preferences} onPreferencesChange={changePreferences} analysisResult={analysisResult} onAnalysisResult={receiveAnalysis} activeResultTab={activeResultTab} onResultTabChange={changeResultTab} />
+    {analysisResult && activeResultTab !== "engine-results" && activeResultTab !== "detection-evidence" && <div id="active-result-view" className="result-view-section">
+      {activeResultTab === "detection-register" && <DetectionsPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={(id) => { selectDetection(id); viewSonar(); }} />}
+      {activeResultTab === "coordinate-plot" && <DetectionMapPage detections={detections} selectedDetectionId={selectedDetectionId} onSelectDetection={selectDetection} onViewSonar={viewSonar} />}
+      {activeResultTab === "survey-comparison" && <SurveyComparisonPage view="comparison" detections={detections} analysisResult={analysisResult} onSelectDetection={selectDetection} onViewSonar={viewSonar} />}
+      {activeResultTab === "returned-detections" && <SurveyComparisonPage view="returned" detections={detections} analysisResult={analysisResult} onSelectDetection={selectDetection} onViewSonar={viewSonar} />}
+      {activeResultTab === "analytics" && <AnalyticsPage detections={detections} analysisResult={analysisResult} />}
+      {activeResultTab === "reports" && <ReportsPage detections={detections} analysisResult={analysisResult} />}
+      {activeResultTab === "settings" && <SettingsPage preferences={preferences} onChange={changePreferences} storageMessage={storageMessage} />}
+    </div>}
+    </section>
   </main>;
 }

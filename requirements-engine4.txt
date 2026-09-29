@@ -1,0 +1,2 @@
+# Optional real detector/training stack; install only when training or running Engine 4.
+ultralytics[export]>=8.4.38

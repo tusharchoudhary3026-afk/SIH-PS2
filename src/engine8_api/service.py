@@ -9,13 +9,17 @@ import numpy as np
 
 from engine5_confidence import ConfidencePipeline
 from engine6_geolocation.service import GeolocationService
+from engine4_detector import YOLODetector
 from .detector import MockDetector
 from .priority import inspection_priority
 
 
 class AnalysisService:
     def __init__(self, detector=None, confidence=None, geolocation=None, config_path=None, review_store=None):
-        self.detector=detector or MockDetector(); self.confidence=confidence or ConfidencePipeline(); self.geolocation=geolocation or GeolocationService()
+        if detector is None:
+            weights=__import__("os").environ.get("SIH_MODEL_WEIGHTS")
+            detector=YOLODetector(weights) if weights else MockDetector()
+        self.detector=detector; self.confidence=confidence or ConfidencePipeline(); self.geolocation=geolocation or GeolocationService()
         path=Path(config_path) if config_path else Path(__file__).with_name("config.json")
         self.config=json.loads(path.read_text()); self.review_store=Path(review_store) if review_store else Path("data/engine8/reviews.json")
 
@@ -33,10 +37,18 @@ class AnalysisService:
         except (OSError,ValueError) as exc: raise ValueError(f"invalid or unsupported image: {exc}") from exc
         configured_datasets=self.config.get("datasets", [])
         requested_dataset=(source_dataset or "ALL").strip()
-        selected_datasets=configured_datasets if requested_dataset.upper() in {"", "ALL", "UNKNOWN"} else [requested_dataset]
+        if requested_dataset.upper() in {"", "ALL"}:
+            # Mock fixtures intentionally show one sample per configured source.
+            # A real model analyzes an uploaded image once; it must never claim
+            # that the same image came from every source dataset.
+            selected_datasets=configured_datasets if self.mode=="MOCK" else ["UNKNOWN"]
+        elif requested_dataset.upper()=="UNKNOWN":
+            selected_datasets=["UNKNOWN"]
+        else:
+            selected_datasets=[requested_dataset]
         if not selected_datasets:
             raise ValueError("no source datasets are configured")
-        unknown_datasets=[dataset for dataset in selected_datasets if dataset not in configured_datasets]
+        unknown_datasets=[dataset for dataset in selected_datasets if dataset not in configured_datasets and dataset!="UNKNOWN"]
         if unknown_datasets:
             raise ValueError(f"unsupported source dataset: {', '.join(unknown_datasets)}")
         detections=[]

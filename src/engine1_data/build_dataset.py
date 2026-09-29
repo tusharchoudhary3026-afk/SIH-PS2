@@ -919,6 +919,7 @@ SOURCES = {  # folder name -> group
     "ai4shipwrecks_test": "shipwreck",
     "ai4shipwrecks_terrain": "shipwreck",
     "milco_nombo": "mine",
+    "crab_pot": "crab_pot",
 }
 
 
@@ -967,8 +968,11 @@ def split_pipe(imgs, args):
         role[i] = "val" if j < args.pipe_val_chunks else "test"
     out = {"train": [], "val": [], "test": []}
     for i, c in enumerate(chunks):
-        lo = args.pipe_buffer if i > 0 and role[i - 1] != role[i] and role[i] != "train" else 0
-        hi = args.pipe_buffer if i < k - 1 and role[i + 1] != role[i] and role[i] != "train" else 0
+        # Remove frames on both sides of every split boundary. SubPipe frames
+        # are highly overlapping, so retaining the train-side neighbors leaks
+        # near-identical sonar into validation/test.
+        lo = args.pipe_buffer if i > 0 and role[i - 1] != role[i] else 0
+        hi = args.pipe_buffer if i < k - 1 and role[i + 1] != role[i] else 0
         out[role[i]] += c[lo: len(c) - hi]
         if role[i] != "train" and len(c) - lo - hi < 20:
             print(f"  WARNING: pipe chunk {i} has only {max(0, len(c) - lo - hi)} frames "
@@ -1000,6 +1004,22 @@ def split_mine(imgs, years_by_split):
             if year in years:
                 out[split].append(p)
     return out
+
+
+def split_crab_pot(imgs, seed):
+    """Make a repeatable image-level split when no acquisition groups exist."""
+    ordered = sorted(imgs, key=lambda path: (path.stem.lower(), path.suffix.lower()))
+    random.Random(seed).shuffle(ordered)
+    n = len(ordered)
+    if n < 3:
+        return {"train": ordered, "val": [], "test": []}
+    val_count = max(1, round(n * 0.15))
+    test_count = max(1, round(n * 0.15))
+    if val_count + test_count >= n:
+        val_count, test_count = 1, 1
+    return {"train": ordered[:n - val_count - test_count],
+            "val": ordered[n - val_count - test_count:n - test_count],
+            "test": ordered[n - test_count:]}
 
 
 # -------------------------------------------------------------------- tiling
@@ -1113,6 +1133,9 @@ def main():
                  "test": args.mine_test.split(",")}
         for sp, im in split_mine(list_images(root / "milco_nombo"), years).items():
             plan[("milco_nombo", sp)] += im
+    if (root / "crab_pot" / "images").exists():
+        for sp, im in split_crab_pot(list_images(root / "crab_pot"), args.seed).items():
+            plan[("crab_pot", sp)] += im
 
     # 2) collect candidate tiles and sample the empty ones ----------------------
     pools = defaultdict(lambda: {"pos": [], "bg": []})  # (group, split)

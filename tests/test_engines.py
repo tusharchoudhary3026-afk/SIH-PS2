@@ -30,6 +30,8 @@ from engine7_evaluation.metrics import evaluate_detections
 from engine8_api.detector import MockDetector
 from engine8_api.server import handler_for
 from engine8_api.service import AnalysisService
+from engine4_detector import YOLODetector
+from engine10_ghostnet.generate import generate as generate_ghostnet
 
 
 def png_bytes():
@@ -173,6 +175,53 @@ class Engine7Tests(unittest.TestCase):
             self.assertIn("Not available with current metadata",(Path(td)/"generalization_report.md").read_text())
 
 
+class Engine4Tests(unittest.TestCase):
+    def test_yolo_adapter_merges_overlapping_tile_predictions(self):
+        class Tensor:
+            def __init__(self, values): self.values=values
+            def cpu(self): return self
+            def tolist(self): return self.values
+        class Boxes:
+            def __init__(self,box):
+                self.xyxy=Tensor([box]); self.cls=Tensor([0]); self.conf=Tensor([.8])
+        class Result:
+            def __init__(self,box): self.boxes=Boxes(box)
+        class Model:
+            names={0:"pipe",1:"shipwreck",2:"mine_like",3:"crab_pot"}
+            calls=0
+            def predict(self,**kwargs):
+                self.calls+=1
+                box=[500,100,640,200] if self.calls==1 else [340,100,480,200]
+                return [Result(box)]
+        result=YOLODetector("unused.pt",model=Model(),tile_size=640,overlap=160).analyze(
+            np.zeros((500,800,3),dtype=np.uint8),image_id="image",source_dataset="SubPipe")
+        self.assertEqual(len(result),1)
+        self.assertEqual(result[0].class_name,"Pipe")
+        self.assertEqual(result[0].bbox.to_list(),[500.0,100.0,640.0,200.0])
+        self.assertEqual(len(result[0].provenance["tile_origins"]),2)
+
+    def test_yolo_adapter_rejects_wrong_class_taxonomy(self):
+        class Model: names={0:"Ghost Net"}
+        with self.assertRaises(ValueError): YOLODetector("unused.pt",model=Model())
+
+
+class Engine10Tests(unittest.TestCase):
+    def test_ghostnet_generation_is_separate_and_background_grouped(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); backgrounds=root/"backgrounds"; backgrounds.mkdir()
+            for index in range(5):
+                Image.fromarray(np.full((96,128),40+index,dtype=np.uint8)).save(backgrounds/f"bg-{index}.png")
+            output=root/"experimental"
+            report=generate_ghostnet(backgrounds,output,count=10,seed=4)
+            self.assertEqual(report["status"],"SYNTHETIC_EXPERIMENT_ONLY")
+            self.assertTrue(report["synthetic_test_available"])
+            self.assertEqual(len(list((output/"images"/"synthetic_test").glob("*.png"))),2)
+            self.assertTrue((output/"data.yaml").is_file())
+            manifest=(output/"manifest.csv").read_text()
+            self.assertIn("experimental_ghost_net",manifest)
+            self.assertIn("background_image",manifest)
+
+
 class Engine8Tests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory(); self.store=Path(self.temp.name)/"reviews.json"
@@ -213,6 +262,21 @@ class Engine8Tests(unittest.TestCase):
         self.assertIsNone(detection_result["calibrated_confidence"])
         self.assertEqual(detection_result["geolocation_type"],"Unavailable")
         self.assertIsNone(detection_result["latitude"]); self.assertIsNone(detection_result["longitude"])
+
+    def test_real_detector_does_not_duplicate_one_image_per_dataset(self):
+        class RealDetector:
+            mode="REAL"
+            calls=0
+            def analyze(self,image,*,image_id,source_dataset):
+                self.calls+=1
+                return [detection(image,source=source_dataset)]
+        detector=RealDetector()
+        service=AnalysisService(detector=detector,review_store=self.store)
+        result=service.analyze_bytes(png_bytes(),source_dataset="ALL")
+        self.assertEqual(detector.calls,1)
+        self.assertEqual(result["datasets"],["UNKNOWN"])
+        self.assertEqual(len(result["detections"]),1)
+        self.assertEqual(result["detections"][0]["source_dataset"],"UNKNOWN")
 
     def test_review_persistence_and_exports(self):
         payload=json.dumps({"detection_id":"review-fixture","action":"flag","note":"synthetic test fixture"}).encode()
