@@ -22,7 +22,6 @@ export default function DashboardPage({ analysisResult }: Props) {
     title="Underwater debris detection"
     description="SEVORA is designed to use AI on side-scan sonar imagery to surface candidate debris and seabed anomalies for human review."
     metrics={metrics}
-    actionLabel="Open sonar analysis"
     dataStatus={analysisResult?.mode === "MOCK" ? "MOCK DATA" : analysisResult?.mode ?? "DEMO DATA"}
   />;
 }
