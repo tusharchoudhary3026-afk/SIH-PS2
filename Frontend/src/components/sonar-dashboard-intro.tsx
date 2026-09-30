@@ -12,7 +12,6 @@ type SonarDashboardIntroProps = {
   title: string;
   description: string;
   metrics: ReadonlyArray<Metric>;
-  actionLabel: string;
   dataStatus?: string;
 };
 
@@ -20,7 +19,6 @@ export default function SonarDashboardIntro({
   title,
   description,
   metrics,
-  actionLabel,
   dataStatus = "DEMO DATA",
 }: SonarDashboardIntroProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -214,17 +212,6 @@ export default function SonarDashboardIntro({
             </div>
             <p className="mission-location-note">Coordinates are shown only when verified navigation metadata is supplied. Shadow and contrast cues support review; they are not standalone proof.</p>
           </section>
-
-          <div className="workspace-row">
-            <div className="workspace-copy">
-              <span className="workspace-kicker">NEXT · SONAR ANALYSIS</span>
-              <h3>Inspect a survey</h3>
-              <p>Upload a side-scan sonar survey to review detections and acoustic evidence.</p>
-            </div>
-            <a className="primary-action" href="#sonar-analysis">
-              {actionLabel}<span aria-hidden="true">↗</span>
-            </a>
-          </div>
 
           <div className="result-footer">
             <span>SEVORA · UNDERWATER SONAR INTELLIGENCE</span>
